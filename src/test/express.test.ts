@@ -1,6 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import request from "supertest";
 import { app } from "../index"
+import { prismaclient } from '../db';
+
+vi.mock("../db.ts",()=>{
+    return{
+        prismaclient:{
+            request:{
+                create:vi.fn()
+            }
+        }
+    }
+    
+})
 
 describe("arithmetic operations", () => {
     describe("sum", () => {
