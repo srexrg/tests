@@ -3,16 +3,7 @@ import request from "supertest";
 import { app } from "../index"
 import { prismaclient } from '../db';
 
-vi.mock("../db.ts",()=>{
-    return{
-        prismaclient:{
-            request:{
-                create:vi.fn()
-            }
-        }
-    }
-    
-})
+vi.mock("../db")
 
 describe("arithmetic operations", () => {
     describe("sum", () => {
