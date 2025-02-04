@@ -1,76 +1,71 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, test, it, vi } from 'vitest';
 import request from "supertest";
 import { app } from "../index"
-import { prismaclient } from '../db';
+import { prismaClient } from '../__mocks__/db'
 
-vi.mock("../db")
+vi.mock('../db');
 
-describe("arithmetic operations", () => {
-    describe("sum", () => {
-        it("should add two positive numbers", async () => {
-            const res = await request(app).post("/sum").send({ a: 5, b: 3 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.sum).toBe(8);
+describe("POST /sum", () => {
+    it("should return the sum of two numbers", async () => {
+        prismaClient.sum.create.mockResolvedValue({
+            id: 1,
+            a: 1,
+            b: 1,
+            result: 3
         });
 
-        it("should handle negative numbers", async () => {
-            const res = await request(app).post("/sum").send({ a: -5, b: 3 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.sum).toBe(-2);
+        vi.spyOn(prismaClient.sum, "create");
+
+        const res = await request(app).post("/sum").send({
+            a: 1,
+            b: 2
         });
+
+        expect(prismaClient.sum.create).toHaveBeenCalledWith({
+            data: {
+                a: 1,
+                b: 2,
+                result: 3
+            }
+        })
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.answer).toBe(3);
     });
 
-    describe("subtraction", () => {
-        it("should reject when a > b", async () => {
-            const res = await request(app).post("/sub").send({ a: 5, b: 3 });
-            expect(res.statusCode).toBe(422);
-            expect(res.body.message).toBe("sorry");
-        });
-
-        it("should reject negative numbers", async () => {
-            const res = await request(app).post("/sub").send({ a: -5, b: 3 });
-            expect(res.statusCode).toBe(422);
-            expect(res.body.message).toBe("sorry");
-        });
-
-        it("should subtract valid numbers", async () => {
-            const res = await request(app).post("/sub").send({ a: 3, b: 5 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.sub).toBe(-2);
-        });
+    it("should return 411 if no inputs are provided", async () => {
+        const res = await request(app).post("/sum").send({});
+        expect(res.statusCode).toBe(411);
+        expect(res.body.message).toBe("Incorrect inputs");
     });
 
-    describe("multiplication", () => {
-        it("should multiply two positive numbers", async () => {
-            const res = await request(app).post("/mul").send({ a: 4, b: 3 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.mul).toBe(12);
+});
+
+
+describe("GET /sum", () => {
+    it("should return the sum of two numbers", async () => {
+        prismaClient.sum.create.mockResolvedValue({
+            id: 1,
+            a: 1,
+            b: 1,
+            result: 3
         });
 
-        it("should handle zero", async () => {
-            const res = await request(app).post("/mul").send({ a: 5, b: 0 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.mul).toBe(0);
-        });
+        const res = await request(app)
+            .get("/sum")
+            .set({
+                a: "1",
+                b: "2"
+            })
+            .send();
+        expect(res.statusCode).toBe(200);
+        expect(res.body.answer).toBe(3);
     });
 
-    describe("division", () => {
-        it("should reject negative numbers", async () => {
-            const res = await request(app).post("/div").send({ a: -6, b: 2 });
-            expect(res.statusCode).toBe(422);
-            expect(res.body.message).toBe("sorry");
-        });
-
-        it("should divide valid numbers", async () => {
-            const res = await request(app).post("/div").send({ a: 6, b: 2 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.div).toBe(3);
-        });
-
-        it("should handle decimal results", async () => {
-            const res = await request(app).post("/div").send({ a: 5, b: 2 });
-            expect(res.statusCode).toBe(200);
-            expect(res.body.div).toBe(2.5);
-        });
+    it("should return 411 if no inputs are provided", async () => {
+        const res = await request(app)
+            .get("/sum").send();
+        expect(res.statusCode).toBe(411);
     });
+
 });

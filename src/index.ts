@@ -1,96 +1,63 @@
 import express from "express";
-import { prismaclient } from "./db";
+import { z } from "zod";
+import { prismaClient } from "./db";
+
 export const app = express();
 app.use(express.json());
 
-app.post("/sum",async (req, res) => {
-    const a = req.body.a;
-    const b = req.body.b;
+const sumInput = z.object({
+    a: z.number(),
+    b: z.number()
+})
 
-    const answer = a + b;
-    await prismaclient.request.create({
-        data:{
-            a,
-            b,
-            result:answer,
-            type:"Sum"
-        }
-    })
+app.post("/sum", async (req, res) => {
+    const parsedResponse = sumInput.safeParse(req.body)
 
-    res.json({
-        sum:answer
-    })
-});
-app.post("/sub",async (req, res) => {
-    const a = req.body.a;
-    const b = req.body.b;
-
-    if(a>b || a<0 || b<0){
-        res.status(422).json({
-            message:"sorry"
-        });
-    }
-    else{
-        const answer = a - b;
-        await prismaclient.request.create({
-            data: {
-                a,
-                b,
-                result: answer,
-                type: "Subtraction"
-            }
-        });
-
-        res.json({
-            sub: answer
-        });
-
-    }
-    
-
-});
-app.post("/mul", async (req, res) => {
-    const a = req.body.a;
-    const b = req.body.b;
-    const answer = a * b;
-    await prismaclient.request.create({
-        data: {
-            a,
-            b,
-            result: answer,
-            type: "Multiply"
-        }
-    })
-
-
-    res.json({
-        mul:answer
-    })
-});
-app.post("/div",async (req, res) => {
-    const a = req.body.a;
-    const b = req.body.b;
-    
-    if ( a < 0 || b < 0) {
-        res.status(422).json({
-            message: "sorry"
+    if (!parsedResponse.success) {
+        return res.status(411).json({
+            message: "Incorrect inputs"
         })
+    }
 
-    }else{
+    const answer = parsedResponse.data.a + parsedResponse.data.b;
 
-    
-
-    const answer = a / b;
-    await prismaclient.request.create({
+    const response = await prismaClient.sum.create({
         data: {
-            a,
-            b,
-            result: answer,
-            type: "Division"
+            a: parsedResponse.data.a,
+            b: parsedResponse.data.b,
+            result: answer
+        }
+    })
+
+    res.json({
+        answer,
+        id: response.id
+    })
+});
+
+app.get("/sum", async (req, res) => {
+    const parsedResponse = sumInput.safeParse({
+        a: Number(req.headers["a"]),
+        b: Number(req.headers["b"])
+    })
+
+    if (!parsedResponse.success) {
+        return res.status(411).json({
+            message: "Incorrect inputs"
+        })
+    }
+
+    const answer = parsedResponse.data.a + parsedResponse.data.b;
+
+    const response = await prismaClient.sum.create({
+        data: {
+            a: parsedResponse.data.a,
+            b: parsedResponse.data.b,
+            result: answer
         }
     })
     res.json({
-        div:answer
+        answer,
+        id: response.id
     })
-}
 });
